@@ -46,7 +46,8 @@
                         :shows-pagination false
                         :index            (get-tab-index current-tab)
                         :ref              #(reset! swiper %)
-                        :on-index-changed #(re-frame/dispatch [navigation-event (index->tab %)])}
+                        ;:on-index-changed #(re-frame/dispatch [navigation-event (index->tab %)])
+                        }
           (for [[index {:keys [screen view-id]}] indexed-tabs]
             ^{:key index}
             [react/with-activity-indicator

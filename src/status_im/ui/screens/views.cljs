@@ -64,22 +64,41 @@
     current-view
     :chat))
 
+(defn warp-comp [comp v cv]
+  (let [st (when (= v cv) {:flex 1
+                           ;:height (when (= v cv) 1000 0)
+                           }
+                          #_{:flex 1
+                           :opacity 0})]
+    [view st [comp]]))
+
 (defview main []
   (letsubs [signed-up? [:signed-up?]
             view-id    [:get :view-id]
             modal-view [:get :modal]]
     (when view-id
       (let [current-view (validate-current-view view-id signed-up?)]
-        (let [component (case current-view
-                          (:wallet :chat-list :discover :contact-list) main-tabs
+        (let [current-view (case current-view
+                             (:wallet :chat-list :discover :contact-list)
+                             :main-tabs
+
+                             (:transactions-history :unsigned-transactions)
+                             :transactions
+
+                             (:wallet-my-token :wallet-market-value)
+                             :wallet-value
+
+                             current-view)
+              component (case current-view
+                          :main-tabs main-tabs
                           :wallet-list wallet-list-screen
                           :wallet-send-transaction send-transaction
                           :wallet-transaction-sent transaction-sent
                           :choose-recipient choose-recipient
                           :wallet-request-transaction request-transaction
-                          (:transactions-history :unsigned-transactions) wallet-transactions/transactions
+                          :transactions wallet-transactions/transactions
                           :wallet-transaction-details wallet-transactions/transaction-details
-                          (:wallet-my-token :wallet-market-value) wallet-assets/my-token-main
+                          :wallet-value wallet-assets/my-token-main
                           :new-chat new-chat
                           :new-group new-group
                           :edit-contact-group edit-contact-group
@@ -114,7 +133,19 @@
                           (throw (str "Unknown view: " current-view)))]
           [(if android? menu-context view) common-styles/flex
            [view common-styles/flex
-            [component]
+            (if (and signed-up?
+                     (#{:main-tabs :wallet-send-transaction :chat
+                        :profile :my-profile :edit-my-profile :group-contacts}
+                      current-view))
+              [view {:flex 1}
+               [warp-comp main-tabs :main-tabs current-view]
+               [warp-comp send-transaction :wallet-send-transaction current-view]
+               [warp-comp chat :chat current-view]
+               [warp-comp profile :profile current-view]
+               [warp-comp my-profile :my-profile current-view]
+               [warp-comp edit-my-profile :edit-my-profile current-view]
+               [warp-comp contact-list :group-contacts current-view]]
+              [component])
             (when modal-view
               [view common-styles/modal
                [modal {:animation-type   :slide

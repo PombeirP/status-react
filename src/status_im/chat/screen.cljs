@@ -73,18 +73,34 @@
                                                 :group-chat group-chat
                                                 :current-public-key current-public-key)]))
 
-(defview messages-view [chat-id group-chat]
-  (letsubs [messages           [:get-chat-messages chat-id]
-            current-public-key [:get-current-public-key]]
+(defn messages-view [chat-id group-chat]
+  (let [messages           (re-frame/subscribe [:get-chat-messages chat-id])
+        current-public-key (re-frame/subscribe [:get-current-public-key])]
     [react/list-view {:renderRow                 (fn [row _ index]
                                                    (message-row {:group-chat         group-chat
-                                                                 :current-public-key current-public-key
+                                                                 :current-public-key @current-public-key
                                                                  :row                row}))
                       :renderScrollComponent     #(scroll-view/invertible-scroll-view (js->clj %))
                       :onEndReached              #(re-frame/dispatch [:load-more-messages])
                       :enableEmptySections       true
                       :keyboardShouldPersistTaps (if platform/android? :always :handled)
-                      :dataSource                (listview/to-datasource-inverted messages)}]))
+                      :dataSource                (listview/to-datasource-inverted @messages)}]))
+
+(defview messages-view2 [chat-id group-chat]
+
+  (letsubs [messages           [:get-chat-messages chat-id]
+            current-public-key [:get-current-public-key]]
+    [react/view
+     [react/text (str "Mcnt " chat-id " " (count messages))]
+     [react/list-view {:renderRow                 (fn [row _ index]
+                                                    (message-row {:group-chat         group-chat
+                                                                  :current-public-key current-public-key
+                                                                  :row                row}))
+                       :renderScrollComponent     #(scroll-view/invertible-scroll-view (js->clj %))
+                       :onEndReached              #(re-frame/dispatch [:load-more-messages])
+                       :enableEmptySections       true
+                       :keyboardShouldPersistTaps (if platform/android? :always :handled)
+                       :dataSource                (listview/to-datasource-inverted messages)}]]))
 
 (defview chat []
   (letsubs [{:keys [chat-id group-chat input-text]} [:get-current-chat]
